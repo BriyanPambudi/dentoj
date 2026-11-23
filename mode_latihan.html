@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<script>
+  try { if (!sessionStorage.getItem('dentoj_sesi')) location.replace('index.html'); }
+  catch { location.replace('index.html'); }
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Latihan – DENTO-J</title>
+
+<style>
+/* ===== VARIABEL ===== */
+:root {
+  --navy: #0b2a55; --navy-dark: #0a2246; --blue: #1d6fe0;
+  --text: #3d4b63; --muted: #7a879c; --bg: #f4f8fd;
+  --border: #e4ebf5; --radius: 16px; --shadow: 0 4px 18px rgba(16,42,85,.06);
+  --sidebar-w: 250px;
+  --purple: #7a3fc4; --green: #14a37f; --blue-pt: #3b82f6; --red: #e0315b; --orange: #f5a20f;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: "Poppins", system-ui, sans-serif; background: var(--bg); color: var(--text); }
+a { text-decoration: none; color: inherit; }
+svg { width: 1em; height: 1em; }
+
+/* ===== SIDEBAR ===== */
+.sidebar { position: fixed; inset: 0 auto 0 0; width: var(--sidebar-w); background: linear-gradient(180deg, var(--navy), var(--navy-dark)); color: #cdd8ea; display: flex; flex-direction: column; z-index: 100; transition: transform .3s; }
+.brand { display: flex; align-items: center; gap: 12px; padding: 20px 18px; }
+.brand svg { width: 44px; height: 44px; color: #fff; }
+.brand b { display: block; color: #fff; font-size: 22px; }
+.brand small { font-size: 10px; color: #6fb6ff; }
+.nav { list-style: none; padding: 10px 12px; flex: 1; }
+.nav a { display: flex; align-items: center; gap: 14px; padding: 11px 14px; border-radius: 8px; margin-bottom: 4px; font-size: 14px; }
+.nav a svg { font-size: 20px; }
+.nav a:hover { background: rgba(255,255,255,.07); color: #fff; }
+.nav a.active { background: var(--blue); color: #fff; }
+
+/* ===== TATA LETAK ===== */
+.main { margin-left: var(--sidebar-w); padding: 16px 28px 28px; min-height: 100vh; }
+.breadcrumb { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); padding-bottom: 14px; border-bottom: 1px solid var(--border); margin-bottom: 18px; }
+.breadcrumb svg { color: var(--blue); font-size: 18px; }
+
+.exam-head { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; margin: 6px 0 20px; }
+.exam-head-icon {
+  width: 64px; height: 64px; border-radius: 50%; flex-shrink: 0;
+  display: grid; place-items: center;
+  background: var(--blue); color: #fff; font-size: 30px;
+  box-shadow: 0 6px 16px rgba(29,111,224,.30);
+}
+.exam-head h1 { font-size: clamp(26px, 3vw, 34px); font-weight: 800; color: var(--navy); line-height: 1.1; }
+.exam-head p  { font-size: 13.5px; color: var(--blue); line-height: 1.6; margin-top: 4px; }
+
+/* Status koneksi alat */
+.alat-status {
+  margin-left: auto; display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 14px; border-radius: 99px; font-size: 12.5px; font-weight: 600;
+  background: #fde7e7; color: #dc2626;
+}
+.alat-status::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.alat-status.on { background: #e3f6e8; color: #15803d; }
+
+.workspace { display: grid; grid-template-columns: 1fr 320px; gap: 22px; align-items: start; }
+.card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
+
+/* ===== PANEL GAMBAR RAHANG ===== */
+.views { display: grid; grid-template-columns: 1.3fr 1fr; gap: 10px; padding: 14px; }
+.view {
+  position: relative;
+  border-radius: 12px; overflow: hidden;
+  background: linear-gradient(160deg, #eef4fc, #f8fbff);
+  min-height: 200px;
+}
+.view img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.view .img-missing { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font-size: 12px; text-align: center; padding: 20px; border: 2px dashed #c6d6ec; border-radius: 12px; }
+.view-label { position: absolute; left: 12px; bottom: 12px; z-index: 3; background: rgba(255,255,255,.92); border: 1px solid var(--border); border-radius: 10px; padding: 5px 12px; font-size: 12px; line-height: 1.3; color: var(--navy); font-weight: 600; }
+.view-label small { display: block; font-weight: 400; color: var(--muted); }
+
+/* ===== TITIK (bulatan bernomor) ===== */
+.dot {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 26px; height: 26px; border-radius: 50%;
+  border: 2px solid #fff; background: var(--c);
+  color: #fff; font: 700 12px "Poppins", sans-serif;
+  display: grid; place-items: center;
+  cursor: pointer; z-index: 2;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--c) 30%, transparent), 0 2px 6px rgba(0,0,0,.25);
+  transition: transform .15s;
+}
+.dot:hover, .dot:focus-visible { transform: translate(-50%, -50%) scale(1.2); outline: none; }
+.dot.active { animation: pulse 1s ease-out infinite; }
+@keyframes pulse {
+  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--c) 70%, transparent); }
+  100% { box-shadow: 0 0 0 16px transparent; }
+}
+
+/* ===== DAFTAR 15 TITIK ===== */
+.point-list { padding: 18px 18px 10px; }
+.point-list h2 { font-size: 17px; color: var(--navy); margin-bottom: 12px; }
+.point-list h3 { font-size: 14px; color: var(--navy); margin: 12px 0 6px; }
+.point-list ul { list-style: none; }
+.point-list button {
+  width: 100%; display: flex; align-items: center; gap: 12px; text-align: left;
+  background: none; border: none; border-bottom: 1px solid var(--border);
+  padding: 7px 4px; font: 12.5px "Poppins", sans-serif; color: var(--text); cursor: pointer; border-radius: 6px;
+}
+.point-list button:hover { background: #f1f6fd; }
+.point-list button.active { background: #e8f1fd; color: var(--navy); font-weight: 600; }
+.num { flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%; background: var(--c); color: #fff; display: grid; place-items: center; font-size: 11px; font-weight: 700; }
+
+/* ===== POP-UP ===== */
+dialog {
+  margin: auto;                               /* wajib: * { margin:0 } menghapus posisi tengah dialog */
+  border: none; border-radius: 18px; padding: 0;
+  width: min(1100px, 94vw); max-height: 92vh;
+  box-shadow: 0 20px 60px rgba(10,34,70,.35);
+}
+dialog::backdrop { background: rgba(10,34,70,.45); backdrop-filter: blur(2px); }
+dialog[open] { animation: popIn .22s ease-out; }
+@keyframes popIn { from { opacity: 0; transform: translateY(16px) scale(.97); } }
+.dlg-head { display: flex; align-items: center; gap: 14px; padding: 16px 20px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: #fff; }
+.dlg-head .num { width: 38px; height: 38px; font-size: 17px; }
+.dlg-head h2 { flex: 1; font-size: 19px; color: var(--navy); }
+.dlg-close { background: none; border: none; font-size: 22px; color: var(--navy); cursor: pointer; width: 36px; height: 36px; border-radius: 8px; }
+.dlg-close:hover { background: #eef3fa; }
+.dlg-body { padding: 16px 20px 20px; overflow: auto; }
+.dlg-body img { display: block; width: 100%; height: auto; border-radius: 12px; }
+.dlg-body .img-missing { padding: 60px 20px; text-align: center; color: var(--muted); border: 2px dashed #c6d6ec; border-radius: 12px; font-size: 13px; }
+
+.source-badge { font-size: 11px; padding: 3px 10px; border-radius: 99px; background: #eef3fa; color: var(--muted); }
+.source-badge.sensor { background: #e6f6f0; color: var(--green); }
+
+.sidebar-user {
+    margin-top: auto; padding: 14px 16px;
+    border-top: 1px solid rgba(255,255,255,.1);
+    font-size: 12.5px; color: #cdd8ea;
+}
+.sidebar-user b { display: block; color: #fff; font-size: 13.5px; margin-bottom: 8px; word-break: break-word; }
+
+.btn-keluar {
+    width: 100%; height: 36px;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    font: inherit; font-size: 13px; color: #fff;
+    background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.15);
+    border-radius: 8px; cursor: pointer;
+}
+.btn-keluar:hover { background: rgba(255,255,255,.15); }
+.btn-keluar svg { width: 1em; height: 1em; }
+
+/* ===== RESPONSIF ===== */
+@media (max-width: 1150px) { .workspace { grid-template-columns: 1fr; } }
+@media (max-width: 768px) {
+  .sidebar { transform: translateX(-100%); }
+  .main { margin-left: 0; padding: 14px; }
+  .views { grid-template-columns: 1fr; }
+  .alat-status { margin-left: 0; }
+}
+</style>
+</head>
+<body>
+
+<!-- ===== IKON ===== -->
+<svg style="display:none">
+  <symbol id="i-tooth" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M7 3c-2.5 0-4 2-4 4.5 0 2.5 1 4 1.5 6S5 21 7 21c1.6 0 1.8-5 5-5s3.4 5 5 5c2 0 2-5.5 2.5-7.5S21 10 21 7.5C21 5 19.5 3 17 3c-2 0-3 1-5 1S9 3 7 3z"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3 2 11h3v9h5v-6h4v6h5v-9h3z"/></symbol>
+  <symbol id="i-syringe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m18 2 4 4M17 7l3-3M19 9 8.7 19.3a1 1 0 0 1-1.4 0l-2.6-2.6a1 1 0 0 1 0-1.4L15 5M9 11l4 4M5 19l-3 3M14 4l6 6"/></symbol>
+  <symbol id="i-clipboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="18" rx="2"/><path d="M9 2h6v4H9zM9 14l2 2 4-4"/></symbol>
+  <symbol id="i-history" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2"/></symbol>
+   <symbol id="i-logout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></symbol>
+</svg>
+
+<!-- ===== SIDEBAR ===== -->
+<aside class="sidebar">
+  <div class="brand"><svg><use href="#i-tooth"/></svg><div><b>DENTO-J</b><small>Local Anesthesia Training System</small></div></div>
+  <ul class="nav">
+    <li><a href="index.html"><svg><use href="#i-home"/></svg>Beranda</a></li>
+    <li><a href="mode_latihan.html" class="active"><svg><use href="#i-syringe"/></svg>Latihan</a></li>
+    <li><a href="mode_ujian.html"><svg><use href="#i-clipboard"/></svg>Ujian</a></li>
+    <li><a href="riwayat.html"><svg><use href="#i-history"/></svg>Riwayat</a></li>
+  </ul>
+  <div class="sidebar-user">
+      <button type="button" class="btn-keluar" id="btnKeluar"><svg><use href="#i-logout"/></svg>Keluar</button>
+  </div>
+</aside>
+
+<!-- ===== KONTEN ===== -->
+<main class="main">
+  <nav class="breadcrumb"><a href="index.html"><svg><use href="#i-home"/></svg></a> › Mode Latihan</nav>
+
+  <header class="exam-head">
+    <span class="exam-head-icon"><svg><use href="#i-syringe"/></svg></span>
+    <div>
+      <h1>Latihan Anestesi Lokal</h1>
+      <p>Pelajari teknik anestesi lokal dengan mengeklik titik pada model rahang 3D.</p>
+    </div>
+    <span class="alat-status" id="alatStatus">Menghubungkan alat…</span>
+  </header>
+
+  <div class="workspace">
+    <section class="card views">
+      <div class="view" data-view="depan">
+        <img src="rahang_depan.webp" alt="Rahang tampak depan">
+        <span class="view-label">Rahang Atas &amp; Bawah<small>(Tampak Depan)</small></span>
+      </div>
+      <div class="view" data-view="oklusal-atas">
+        <img src="rahang_atas.webp" alt="Rahang atas tampak oklusal">
+        <span class="view-label">Rahang Atas<small>(Tampak Oklusal)</small></span>
+      </div>
+    </section>
+
+    <aside class="card point-list">
+      <h2>Daftar 15 Titik Anestesi</h2>
+      <div id="pointList"></div>
+    </aside>
+  </div>
+</main>
+
+<!-- ===== POP-UP ===== -->
+<dialog id="popup" aria-labelledby="popupTitle">
+  <div class="dlg-head">
+    <span class="num" id="popupNum">1</span>
+    <h2 id="popupTitle">Nama titik</h2>
+    <span class="source-badge" id="popupSource">Klik</span>
+    <button class="dlg-close" id="popupClose" aria-label="Tutup">✕</button>
+  </div>
+  <div class="dlg-body" id="popupBody"></div>
+</dialog>
+
+<script>
+      /* ===== 1. DATA TITIK ===== */
+      const POPUP_PATH = (id) => `popup_${id}.webp`;
+      const MODE_LOKAL = ['127.0.0.1', 'localhost'].includes(location.hostname);
+      const KUNCI_SESI = 'dentoj_sesi';
+
+      const COLORS = { purple: 'var(--purple)', green: 'var(--green)', blue: 'var(--blue-pt)', red: 'var(--red)', orange: 'var(--orange)' };
+
+      const POINTS = [
+        { id: 1,  rahang: 'Rahang Bawah', nama: 'Nervus Alveolaris Inferior kanan',        warna: 'purple', posisi: { 'depan': [22, 50] } },
+        { id: 2,  rahang: 'Rahang Bawah', nama: 'Nervus Alveolaris Inferior kiri',         warna: 'purple', posisi: { 'depan': [79, 50] } },
+        { id: 3,  rahang: 'Rahang Bawah', nama: 'Nervus Mentalis kanan',                   warna: 'green',  posisi: { 'depan': [36, 84] } },
+        { id: 4,  rahang: 'Rahang Bawah', nama: 'Nervus Mentalis kiri',                    warna: 'green',  posisi: { 'depan': [64, 84] } },
+        { id: 5,  rahang: 'Rahang Atas',  nama: 'Nervus Nasopalatinus',                    warna: 'blue',   posisi: { 'oklusal-atas': [50, 30] } },
+        { id: 6,  rahang: 'Rahang Atas',  nama: 'Nervus Palatinus mayor kanan',            warna: 'blue',   posisi: { 'oklusal-atas': [40, 42] } },
+        { id: 7,  rahang: 'Rahang Atas',  nama: 'Nervus Palatinus mayor kiri',             warna: 'blue',   posisi: { 'oklusal-atas': [60, 42] } },
+        { id: 8,  rahang: 'Rahang Atas',  nama: 'Nervus Infraorbital kanan',               warna: 'red',    posisi: { 'depan': [36, 21] } },
+        { id: 9,  rahang: 'Rahang Atas',  nama: 'Nervus Infraorbital kiri',                warna: 'red',    posisi: { 'depan': [64, 21] } },
+        { id: 10, rahang: 'Rahang Atas',  nama: 'Nervus Anterior Superior Alveolar kanan', warna: 'orange', posisi: { 'depan': [39, 37] } },
+        { id: 11, rahang: 'Rahang Atas',  nama: 'Nervus Anterior Superior Alveolar kiri',  warna: 'orange', posisi: { 'depan': [62, 37] } },
+        { id: 12, rahang: 'Rahang Atas',  nama: 'Nervus Middle Superior Alveolar kanan',   warna: 'orange', posisi: { 'depan': [33, 37] } },
+        { id: 13, rahang: 'Rahang Atas',  nama: 'Nervus Middle Superior Alveolar kiri',    warna: 'orange', posisi: { 'depan': [68, 37] } },
+        { id: 14, rahang: 'Rahang Atas',  nama: 'Nervus Posterior Superior Alveolar kanan',warna: 'orange', posisi: { 'depan': [27, 37] } },
+        { id: 15, rahang: 'Rahang Atas',  nama: 'Nervus Posterior Superior Alveolar kiri', warna: 'orange', posisi: { 'depan': [74, 37] } },
+      ];
+
+      /* ===== 2. TITIK DI ATAS GAMBAR ===== */
+      function renderDots() {
+        POINTS.forEach(p => {
+          Object.entries(p.posisi).forEach(([viewName, [x, y]]) => {
+            const view = document.querySelector(`.view[data-view="${viewName}"]`);
+            if (!view) return;
+            const dot = document.createElement('button');
+            dot.className = 'dot';
+            dot.textContent = p.id;
+            dot.dataset.id = p.id;
+            dot.style.left = x + '%';
+            dot.style.top  = y + '%';
+            dot.style.setProperty('--c', COLORS[p.warna]);
+            dot.setAttribute('aria-label', `Titik ${p.id}: ${p.nama}`);
+            view.appendChild(dot);
+          });
+        });
+      }
+
+      /* ===== 3. DAFTAR DI KANAN ===== */
+      function renderList() {
+        const box = document.getElementById('pointList');
+        ['Rahang Bawah', 'Rahang Atas'].forEach(grup => {
+          box.insertAdjacentHTML('beforeend', `<h3>${grup}</h3>`);
+          const ul = document.createElement('ul');
+          POINTS.filter(p => p.rahang === grup).forEach(p => {
+            ul.insertAdjacentHTML('beforeend',
+              `<li><button data-id="${p.id}"><span class="num" style="--c:${COLORS[p.warna]}">${p.id}</span>${p.nama}</button></li>`);
+          });
+          box.appendChild(ul);
+        });
+      }
+
+      /* ===== 4. POP-UP (dipanggil oleh klik maupun sensor) ===== */
+      const popup = document.getElementById('popup');
+
+      function showPopup(id, sumber = 'klik') {
+        const p = POINTS.find(pt => pt.id === Number(id));
+        if (!p) return console.warn('Titik tidak dikenal:', id);
+
+        document.getElementById('popupNum').textContent = p.id;
+        document.getElementById('popupNum').style.setProperty('--c', COLORS[p.warna]);
+        document.getElementById('popupTitle').textContent = p.nama;
+
+        const badge = document.getElementById('popupSource');
+        badge.textContent = sumber === 'sensor' ? 'Terdeteksi sensor' : 'Dipilih di layar';
+        badge.className = 'source-badge' + (sumber === 'sensor' ? ' sensor' : '');
+
+        const body = document.getElementById('popupBody');
+        body.innerHTML = '';
+        const img = new Image();
+        img.alt = `Penjelasan ${p.nama}`;
+        img.src = POPUP_PATH(p.id);
+        img.onerror = () => {
+          body.innerHTML = `<div class="img-missing">File <b>${POPUP_PATH(p.id)}</b> tidak ditemukan.</div>`;
+        };
+        body.appendChild(img);
+
+        setActive(p.id);
+        if (sumber === 'klik') kirimKeAlat({ tipe: 'pilih', titik: p.id });   // web → alat (DFPlayer)
+        if (!popup.open) popup.showModal();
+      }
+
+      function setActive(id) {
+        document.querySelectorAll('.dot, .point-list button').forEach(el =>
+          el.classList.toggle('active', Number(el.dataset.id) === Number(id)));
+      }
+
+      /* ===== 5. EVENT KLIK ===== */
+      document.addEventListener('click', e => {
+        const target = e.target.closest('.dot, .point-list button');
+        if (target) showPopup(target.dataset.id, 'klik');
+      });
+
+      document.getElementById('popupClose').addEventListener('click', () => popup.close());
+      popup.addEventListener('click', e => { if (e.target === popup) popup.close(); });
+      popup.addEventListener('close', () => setActive(null));
+
+      document.querySelectorAll('.view img').forEach(img => {
+        img.addEventListener('error', () => {
+          img.style.visibility = 'hidden';
+          img.insertAdjacentHTML('afterend', `<div class="img-missing">Letakkan gambar di<br><b>${img.getAttribute('src')}</b></div>`);
+        });
+      });
+
+      /* Alat bantu posisi titik: tahan Alt + klik gambar → koordinat di Console */
+      document.querySelectorAll('.view').forEach(view => {
+        view.addEventListener('click', e => {
+          if (!e.altKey) return;
+          const r = view.getBoundingClientRect();
+          const x = ((e.clientX - r.left) / r.width * 100).toFixed(0);
+          const y = ((e.clientY - r.top) / r.height * 100).toFixed(0);
+          console.log(`'${view.dataset.view}': [${x}, ${y}]`);
+        });
+      });
+
+      /* ===== 6. KONEKSI DUA ARAH DENGAN ALAT (WebSocket) ===== */
+      const alatStatus = document.getElementById('alatStatus');
+      let ws = null;
+
+      function setStatusAlat(terhubung, teks) {
+        alatStatus.classList.toggle('on', terhubung);
+        alatStatus.textContent = teks || (terhubung ? 'Alat terhubung' : 'Alat tidak terhubung');
+      }
+
+      function sambungAlat() {
+        if (MODE_LOKAL) return setStatusAlat(false, 'Mode uji lokal (tanpa alat)');
+
+        ws = new WebSocket(`ws://${location.hostname}:81/`);
+        ws.onopen  = () => setStatusAlat(true);
+        ws.onclose = () => { setStatusAlat(false); setTimeout(sambungAlat, 3000); };
+        ws.onerror = () => ws.close();
+
+        // alat → web
+        ws.onmessage = (e) => {
+          let data;
+          try { data = JSON.parse(e.data); } catch { return; }
+          if (data.tipe === 'sensor') showPopup(data.titik, 'sensor');
+        };
+      }
+
+      // web → alat
+      function kirimKeAlat(pesan) {
+        if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(pesan));
+      }
+
+      // Uji tanpa hardware: ketik di Console → simulasiSensor(1)
+      window.simulasiSensor = (id) => showPopup(id, 'sensor');
+
+      /* ===== 7. JALANKAN ===== */
+      renderDots();
+      renderList();
+      sambungAlat();
+
+      // tombol keluar
+      // tombol keluar
+      function bacaSesi() { try { return JSON.parse(sessionStorage.getItem(KUNCI_SESI)); } catch { return null; } }
+      function hapusSesi() {
+        try { sessionStorage.removeItem(KUNCI_SESI); } catch {}
+        try { sessionStorage.removeItem('dentoj_akses_riwayat'); } catch {}
+      }
+
+      document.getElementById('btnKeluar').addEventListener('click', async () => {
+        const sesi = bacaSesi();
+        if (!MODE_LOKAL && sesi) {
+          try { await fetch('/api/logout', { method: 'POST', headers: { 'X-Token': sesi.token } }); } catch {}
+        }
+        hapusSesi();
+        location.replace('index.html');
+      });
+</script>
+</body>
+</html>

@@ -1,0 +1,1268 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8"/>
+    <!-- Belum login → kembali ke halaman login -->
+    <script>
+        try { if (!sessionStorage.getItem('dentoj_sesi')) location.replace('index.html'); }
+        catch { location.replace('index.html'); }
+    </script>
+    <title>Ujian Anestesi Lokal Dento-j</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+    <style>
+        :root {
+        --navy: #0b2a55; --navy-dark: #0a2246; --blue: #1d6fe0;
+        --text: #3d4b63; --muted: #7a879c; --bg: #f4f8fd;
+        --border: #e4ebf5; --radius: 16px; --shadow: 0 4px 18px rgba(16,42,85,.06);
+        --sidebar-w: 250px;
+        /* Warna kelompok titik */
+        --purple: #7a3fc4; --green: #14a37f; --blue-pt: #3b82f6; --red: #e0315b; --orange: #f5a20f;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: "Poppins", system-ui, sans-serif; background: var(--bg); color: var(--text); }
+        a { text-decoration: none; color: inherit; }
+        svg { width: 1em; height: 1em; }
+        
+        .sidebar { position: fixed; inset: 0 auto 0 0; width: var(--sidebar-w); background: linear-gradient(180deg, var(--navy), var(--navy-dark)); color: #cdd8ea; display: flex; flex-direction: column; z-index: 100; transition: transform .3s; }
+        .brand { display: flex; align-items: center; gap: 12px; padding: 20px 18px; }
+        .brand svg { width: 44px; height: 44px; color: #fff; }
+        .brand b { display: block; color: #fff; font-size: 22px; }
+        .brand small { font-size: 10px; color: #6fb6ff; }
+        .nav { list-style: none; padding: 10px 12px; flex: 1; }
+        .nav a { display: flex; align-items: center; gap: 14px; padding: 11px 14px; border-radius: 8px; margin-bottom: 4px; font-size: 14px; }
+        .nav a svg { font-size: 20px; }
+        .nav a:hover { background: rgba(255,255,255,.07); color: #fff; }
+        .nav a.active { background: var(--blue); color: #fff; }
+        .sidebar-footer { display: flex; gap: 10px; align-items: center; padding: 16px 18px; border-top: 1px solid rgba(255,255,255,.1); font-size: 10px; line-height: 1.4; }
+        .sidebar-footer svg { font-size: 30px; flex-shrink: 0; }
+
+        .main{
+            margin-left: var(--sidebar-w);
+            padding: 16px 28px 28px;
+            min-height: 100vh;
+        }
+        .breadcrumb{
+            display:  flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+            color: var(--muted);
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 10px;
+        }
+        .breadcrumb svg{
+            color:var(--blue);
+            font-size: 18px;
+        }
+        .page-head h1{
+            font-size: clamp(26px, 3vw, 38px);
+            color:var(--navy);
+            font-weight: 800;
+        }
+        .page-head p{
+            color: var(--blue);
+            font-size: 14px;
+            margin-bottom: 18px;
+        }
+        /* ===== Judul halaman ===== */
+        .exam-head { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; margin: 6px 0 20px; }
+
+        /* Status koneksi alat (sensor) */
+        .alat-status {
+        margin-left: auto; display: inline-flex; align-items: center; gap: 8px;
+        padding: 6px 14px; border-radius: 99px; font-size: 12.5px; font-weight: 600;
+        background: #fde7e7; color: #dc2626;
+        }
+        .alat-status::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+        .alat-status.on { background: #e3f6e8; color: #15803d; }
+        .exam-head-icon {
+        width: 64px; height: 64px; border-radius: 50%; flex-shrink: 0;
+        display: grid; place-items: center;
+        background: var(--blue); color: #fff; font-size: 30px;
+        box-shadow: 0 6px 16px rgba(29,111,224,.30);
+        }
+        .exam-head h1 { font-size: clamp(26px, 3vw, 34px); font-weight: 800; color: var(--navy); line-height: 1.1; }
+        .exam-head p  { font-size: 13.5px; color: var(--blue); line-height: 1.6; margin-top: 4px; }
+
+        /* ===== Kartu formulir ===== */
+        .exam-form {
+        display: grid;
+        grid-template-columns: 1fr 1fr 0.8fr auto;   /* 3 isian + tombol */
+        align-items: end;                            /* tombol sejajar dengan kotak isian */
+        gap: 24px;
+        padding: 18px 22px 20px;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        }
+        .field { display: flex; flex-direction: column; gap: 8px; }
+        .field label {
+        display: flex; align-items: center; gap: 10px;
+        font-size: 12.5px; font-weight: 500; color: var(--navy);
+        }
+        .field label svg { font-size: 18px; color: var(--navy); }
+
+        .field input,
+        .field select {
+        height: 46px; width: 100%;
+        padding: 0 16px;
+        font: 500 14px "Poppins", sans-serif; color: var(--navy);
+        background: #fff;
+        border: 1px solid #d5e0ee; border-radius: 10px;
+        transition: border-color .2s, box-shadow .2s;
+        }
+        .field input::placeholder { color: #a7b3c5; font-weight: 400; }
+        .field input:focus,
+        .field select:focus {
+        outline: none;
+        border-color: var(--blue);
+        box-shadow: 0 0 0 3px rgba(29,111,224,.15);
+        }
+
+        /* Panah dropdown dibuat sendiri agar seragam di semua browser */
+        .field select {
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230b2a55' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 14px center;
+        background-size: 16px;
+        cursor: pointer;
+        }
+
+        /* Tombol Mulai Ujian */
+        .btn-start {
+        height: 50px; padding: 0 34px;
+        display: inline-flex; align-items: center; justify-content: center; gap: 12px;
+        font: 600 15px "Poppins", sans-serif; color: #fff;
+        background: var(--blue); border: none; border-radius: 10px;
+        cursor: pointer;
+        box-shadow: 0 6px 16px rgba(29,111,224,.30);
+        transition: background .2s, transform .15s;
+        }
+        .btn-start svg { font-size: 20px; }
+        .btn-start:hover  { background: #155bc0; }
+        .btn-start:active { transform: scale(.97); }
+
+        /* Saat ujian berjalan: formulir dikunci */
+        .exam-form input:disabled,
+        .exam-form select:disabled { background: #f3f6fa; color: var(--muted); }
+        .btn-start:disabled { background: #9db8de; box-shadow: none; cursor: not-allowed; }
+        
+        /* ===== Area ujian ===== */
+        .exam-body { margin-top: 22px; display: flex; flex-direction: column; gap: 20px; }
+        .exam-body[hidden] { display: none; }
+
+        .exam-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 20px; align-items: stretch; }
+
+        /* Kartu dasar (dipakai semua kartu ujian) */
+        .card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
+
+        /* ----- Kartu kiri: instruksi ----- */
+        .instr-card { padding: 22px 24px; }
+        .card-title { display: flex; align-items: center; gap: 10px; font-size: 17px; color: var(--navy); margin-bottom: 16px; }
+        .card-title svg { width: 24px; height: 24px; color: var(--blue); flex: none; }
+        .instr-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+        .instr-list li {
+            display: grid; grid-template-columns: 30px 1fr; gap: 14px; align-items: start;
+            padding-bottom: 12px; border-bottom: 1px solid var(--border);
+            font-size: 13.5px; line-height: 1.55; color: var(--text);
+        }
+        .instr-list li:last-child { border-bottom: none; padding-bottom: 0; }
+        .instr-no {
+            width: 30px; height: 30px; border-radius: 50%;
+            display: grid; place-items: center;
+            background: var(--blue); color: #fff; font-size: 14px; font-weight: 700;
+        }
+        .instr-list b { color: var(--blue); }
+        .instr-list b.hijau { color: #15803d; }
+
+        /* ----- Kartu kanan: soal ----- */
+        .soal-card { padding: 22px 24px; display: flex; flex-direction: column; gap: 18px; }
+        .soal-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+        .soal-head h3 { font-size: 18px; font-weight: 600; color: var(--navy); }
+        .soal-head h3 b { font-size: 30px; color: var(--blue); }
+
+        /* Timer ringkas di kanan atas — warna berubah lewat class */
+        .timer-card {
+            --tc: var(--blue); --tbg: #e8f1fd;
+            display: flex; align-items: center; gap: 10px;
+            background: var(--tbg); border-radius: 12px; padding: 8px 14px;
+            transition: background .3s;
+        }
+        .timer-icon { width: 32px; height: 32px; color: var(--tc); flex: none; }
+        .timer-card b {
+            display: block; font-size: 26px; font-weight: 800; line-height: 1; color: var(--navy);
+            font-variant-numeric: tabular-nums;
+        }
+        .timer-card small { font-size: 11.5px; color: var(--muted); }
+        .timer-card.is-warning { --tc: #f59e0b; --tbg: #fff4e0; }
+        .timer-card.is-success { --tc: #16a34a; --tbg: #e3f6e8; }
+        .timer-card.is-success b { color: #15803d; }
+        .timer-card.is-fail    { --tc: #dc2626; --tbg: #fde7e7; }
+        .timer-card.is-fail b, .timer-card.is-fail small { color: #dc2626; }
+
+        .soal-label { font-size: 14px; color: var(--text); margin-bottom: -8px; }
+        .target-box {
+            display: flex; align-items: center; justify-content: center; text-align: center;
+            min-height: 110px; padding: 18px 22px;
+            background: #e8f1fd; border: 2px solid #c9ddf8; border-radius: 14px;
+            font-size: clamp(19px, 2vw, 26px); font-weight: 700; color: var(--navy); line-height: 1.35;
+        }
+
+        /* Progress soal (di dalam kartu kanan) */
+        .progress-box { border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px 18px; }
+        .progress-box-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+        .progress-box-head h4 { font-size: 15px; color: var(--navy); }
+        .progress-count { background: #e8f1fd; color: var(--blue); font-weight: 700; font-size: 13px; padding: 4px 12px; border-radius: 999px; }
+        .progress-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 10px; }
+        .q-dot {
+            aspect-ratio: 1; border-radius: 50%;
+            display: grid; place-items: center;
+            font-size: 14px; font-weight: 600;
+            background: #e6ebf2; color: #7a879c;
+            transition: background .25s, box-shadow .25s;
+        }
+        .q-dot.active { background: var(--blue); color: #fff; box-shadow: 0 0 0 3px #fff, 0 0 0 5px var(--blue); }
+        .q-dot.ok     { background: #22a447; color: #fff; }
+        .q-dot.fail   { background: #e5484d; color: #fff; }
+
+        /* Tombol Berhenti Ujian (hanya tampil saat ujian berjalan) */
+        .soal-foot { display: flex; justify-content: flex-end; margin-top: auto; }
+        .btn-stop {
+            height: 42px; padding: 0 18px;
+            display: inline-flex; align-items: center; gap: 8px;
+            font: 600 14px "Poppins", sans-serif; color: #dc2626;
+            background: #fff; border: 1.5px solid #f3b4b4; border-radius: 10px;
+            cursor: pointer; transition: background .2s, border-color .2s;
+        }
+        .btn-stop svg { width: 18px; height: 18px; }
+        .btn-stop:hover { background: #fde7e7; border-color: #dc2626; }
+        .btn-stop[hidden] { display: none; }
+
+        /* Pop-up konfirmasi berhenti */
+        .result-dialog.warn { --rc: #dc2626; }
+        .konfirm-foot { display: flex; gap: 10px; }
+        .konfirm-foot button { flex: 1; height: 44px; }
+        .btn-danger {
+            font: 600 14px "Poppins", sans-serif; color: #fff;
+            background: #dc2626; border: none; border-radius: 10px; cursor: pointer;
+        }
+        .btn-danger:hover { background: #b91c1c; }
+
+        /* Tanda wajib isi pada label formulir */
+        .wajib { color: #dc2626; margin-left: -6px; }
+
+        /* Pop-up hasil */
+        .result-dialog {
+        --rc: var(--blue);
+        width: min(380px, 90vw); padding: 28px 28px 26px;
+        margin: auto;
+        text-align: center; border: none; border-radius: 18px;
+        box-shadow: 0 20px 50px rgba(10,34,70,.25);
+        font-family: "Poppins", system-ui, sans-serif; color: var(--text);
+        }
+        .result-dialog::backdrop { background: rgba(225,232,242,.55); backdrop-filter: blur(4px); }
+        .result-dialog[open] { animation: popIn .22s ease-out; }
+        @keyframes popIn { from { opacity: 0; transform: translateY(14px) scale(.96); } }
+        .result-dialog.ok   { --rc: #22a447; }
+        .result-dialog.fail { --rc: #e5484d; }
+        .result-icon {
+        width: 72px; height: 72px; margin: 0 auto 12px; border-radius: 50%;
+        display: grid; place-items: center; font-size: 36px; color: #fff; background: var(--rc);
+        }
+        .result-dialog h2 { font-size: 24px; color: var(--rc); }
+        .result-dialog p  { font-size: 14px; line-height: 1.55; margin: 6px 0 20px; color: var(--text); }
+        .result-dialog .btn-start { width: 100%; }
+
+        /* ================================================================
+           BAR HASIL UJIAN (muncul setelah ujian selesai)
+           ================================================================ */
+        .result-bar {
+        display: grid;
+        grid-template-columns: auto auto auto 1fr auto;
+        gap: 14px; align-items: stretch;
+        animation: popIn .3s ease-out;
+        }
+        .result-bar[hidden] { display: none; }
+
+        .rb-peserta {
+        display: grid; grid-template-columns: auto auto 1fr;
+        column-gap: 8px; row-gap: 2px; align-content: center;
+        padding: 12px 18px; font-size: 12.5px; min-width: 210px;
+        }
+        .rb-peserta span:nth-child(3n+1) { color: var(--muted); }
+        .rb-peserta span:nth-child(3n)   { color: var(--navy); font-weight: 600; }
+
+        .rb-skor {
+        --sc: #22a447; --sbg: #e3f6e8;
+        display: flex; align-items: center; gap: 14px;
+        padding: 12px 22px; min-width: 220px;
+        background: var(--sbg); border: none; border-radius: var(--radius);
+        font-family: inherit; text-align: left; cursor: pointer;
+        transition: transform .15s, box-shadow .15s;
+        }
+        .rb-skor.fail { --sc: #e5484d; --sbg: #fde7e7; }
+        .rb-skor:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(16,42,85,.10); }
+        .rb-ikon {
+        width: 48px; height: 48px; border-radius: 50%; flex-shrink: 0;
+        display: grid; place-items: center; font-size: 24px; color: #fff; background: var(--sc);
+        }
+        .rb-skor b     { display: block; font-size: 30px; font-weight: 800; line-height: 1; color: var(--sc); }
+        .rb-skor small { display: block; font-size: 12px; margin-top: 3px; color: var(--sc); }
+
+        .rb-detail { padding: 12px 18px; min-width: 0; }
+        .rb-detail h4 { font-size: 13px; color: var(--navy); margin-bottom: 8px; }
+        .rb-dots { display: flex; flex-wrap: wrap; gap: 6px; }
+        .rb-dot {
+        width: 30px; height: 30px; border-radius: 50%; border: none;
+        font: 600 12px "Poppins", sans-serif; color: #fff; background: #22a447;
+        cursor: pointer; transition: transform .15s;
+        }
+        .rb-dot.fail { background: #e5484d; }
+        .rb-dot:hover { transform: scale(1.15); }
+
+        .rb-aksi { display: flex; flex-direction: column; gap: 8px; justify-content: center; }
+        .rb-aksi .btn-start { height: 46px; padding: 0 22px; font-size: 14px; }
+        .rb-aksi-row { display: flex; gap: 8px; }
+
+        /* Tombol sekunder (Simpan, Ujian Baru, dll.) */
+        .btn-sec {
+        flex: 1; height: 38px; padding: 0 14px;
+        display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        font: 600 13px "Poppins", sans-serif; color: var(--navy);
+        background: #fff; border: 1px solid #d5e0ee; border-radius: 10px;
+        cursor: pointer; white-space: nowrap; transition: border-color .2s, color .2s;
+        }
+        .btn-sec svg { font-size: 16px; }
+        .btn-sec:hover { border-color: var(--blue); color: var(--blue); }
+        .btn-sec.saved, .btn-sec.saved:hover { color: #15803d; border-color: #9fd9b0; background: #e3f6e8; cursor: default; }
+        .btn-sec:disabled:not(.saved) { opacity: .6; cursor: wait; }
+
+        /* ===== Pop-up lebar (daftar & rekap) ===== */
+        .result-dialog.wide { width: min(540px, 92vw); text-align: left; }
+        .dlg-head { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+        .result-dialog.wide .result-icon { width: 48px; height: 48px; font-size: 24px; margin: 0; flex-shrink: 0; }
+        .result-dialog.wide h2 { font-size: 20px; line-height: 1.2; }
+        .dlg-sub { font-size: 12.5px; color: var(--muted); }
+
+        .dlg-list { display: flex; flex-direction: column; gap: 8px; max-height: 52vh; overflow: auto; margin-bottom: 18px; }
+        .dlg-item {
+        display: flex; align-items: center; gap: 12px; width: 100%;
+        padding: 10px 12px; background: #fff; border: 1px solid var(--border); border-radius: 12px;
+        font: inherit; text-align: left; color: var(--text); cursor: pointer;
+        transition: border-color .15s, background .15s;
+        }
+        .dlg-item:hover { border-color: var(--rc); background: #fafcff; }
+        .dlg-no {
+        width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+        display: grid; place-items: center; font-size: 13px; font-weight: 700; color: #fff; background: var(--rc);
+        }
+        .dlg-nama { flex: 1; font-size: 13.5px; font-weight: 600; color: var(--navy); }
+        .dlg-nama small { display: block; font-size: 12px; font-weight: 400; color: var(--muted); }
+        .dlg-waktu { font-size: 12px; color: var(--muted); white-space: nowrap; }
+        .dlg-empty { text-align: center; color: var(--muted); padding: 22px 0; font-size: 14px; }
+
+        .dlg-foot { display: flex; gap: 8px; }
+        .dlg-foot .btn-start { flex: 1; width: auto; height: 44px; padding: 0 16px; font-size: 14px; }
+        .dlg-foot .btn-sec { height: 44px; flex: 0 0 auto; }
+
+        /* Pop-up detail satu titik */
+        .dlg-soal {
+        display: inline-block; margin-bottom: 10px; padding: 3px 12px; border-radius: 20px;
+        font-size: 12px; font-weight: 600; color: var(--rc); background: #f4f8fd;
+        }
+        .result-dialog p.dlg-meta { font-size: 12.5px; color: var(--muted); margin: -10px 0 20px; }
+
+        /* Rekap */
+        .rekap-sum { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+        .rekap-sum div { background: var(--bg); border-radius: 10px; padding: 8px 12px; font-size: 11.5px; color: var(--muted); }
+        .rekap-sum b { display: block; font-size: 18px; color: var(--navy); }
+        .rekap-wrap { max-height: 44vh; overflow: auto; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 18px; }
+        .rekap-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+        .rekap-table th { position: sticky; top: 0; background: #f4f8fd; color: var(--navy); text-align: left; padding: 8px 10px; font-weight: 600; }
+        .rekap-table td { padding: 8px 10px; border-top: 1px solid var(--border); }
+        .rekap-table tr[data-no] { cursor: pointer; }
+        .rekap-table tr[data-no]:hover td { background: #fafcff; }
+        .tag { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+        .tag.ok   { background: #e3f6e8; color: #15803d; }
+        .tag.fail { background: #fde7e7; color: #dc2626; }
+
+        /* Notifikasi kecil */
+        .toast {
+        position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 20px);
+        background: var(--navy); color: #fff; padding: 11px 18px; border-radius: 10px;
+        font-size: 13.5px; box-shadow: 0 10px 24px rgba(10,34,70,.25);
+        opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s; z-index: 300;
+        }
+        .toast.show { opacity: 1; transform: translate(-50%, 0); }
+        
+        .sidebar-user {
+            margin-top: auto; padding: 14px 16px;
+            border-top: 1px solid rgba(255,255,255,.1);
+            font-size: 12.5px; color: #cdd8ea;
+        }
+        .sidebar-user b { display: block; color: #fff; font-size: 13.5px; margin-bottom: 8px; word-break: break-word; }
+        
+        .btn-keluar {
+            width: 100%; height: 36px;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            font: inherit; font-size: 13px; color: #fff;
+            background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.15);
+            border-radius: 8px; cursor: pointer;
+        }
+        .btn-keluar:hover { background: rgba(255,255,255,.15); }
+        .btn-keluar svg { width: 1em; height: 1em; }
+        
+        @media (max-width: 1400px) {
+        .result-bar { grid-template-columns: repeat(3, 1fr); }
+        .rb-detail  { grid-column: span 2; }
+        }
+        @media (max-width: 1100px) { .exam-grid { grid-template-columns: 1fr; } }
+        @media (max-width: 768px) {
+        .sidebar { transform: translateX(-100%); }
+        .main { margin-left: 0; padding: 14px; }
+        .alat-status { margin-left: 0; }
+        .exam-form { grid-template-columns: 1fr; }
+        .exam-grid { grid-template-columns: 1fr; }
+        .soal-head { flex-direction: column; }
+        .progress-grid { grid-template-columns: repeat(5, 1fr); }
+        .result-bar { grid-template-columns: 1fr; }
+        .rb-detail  { grid-column: auto; }
+        }
+    </style>
+</head>
+<body>
+    <svg style="display:none">
+        <symbol id="i-tooth" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M7 3c-2.5 0-4 2-4 4.5 0 2.5 1 4 1.5 6S5 21 7 21c1.6 0 1.8-5 5-5s3.4 5 5 5c2 0 2-5.5 2.5-7.5S21 10 21 7.5C21 5 19.5 3 17 3c-2 0-3 1-5 1S9 3 7 3z"/></symbol>
+        <symbol id="i-home" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3 2 11h3v9h5v-6h4v6h5v-9h3z"/></symbol>
+        <symbol id="i-syringe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m18 2 4 4M17 7l3-3M19 9 8.7 19.3a1 1 0 0 1-1.4 0l-2.6-2.6a1 1 0 0 1 0-1.4L15 5M9 11l4 4M5 19l-3 3M14 4l6 6"/></symbol>
+        <symbol id="i-clipboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="18" rx="2"/><path d="M9 2h6v4H9zM9 14l2 2 4-4"/></symbol>
+        <symbol id="i-history" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2"/></symbol>
+        <symbol id="i-emblem" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4M5 5l3 3M16 16l3 3M5 19l3-3M16 8l3-3"/></symbol>
+        <symbol id="i-user" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4.5"/><path d="M3 21c0-4.5 4-7 9-7s9 2.5 9 7z"></path></symbol>
+        <symbol id="i-idcard" viewBox="0 0 24 24" fill="currentColor"><path d="M5 2h10l5 5v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1zm3 10v2h8v-2zm0 4v2h8v-2zm0-8v2h4V8z"></path></symbol>
+        <symbol id="i-cap" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3 1 9l11 6 9-4.9V17h2V9zM5 13.2V17c0 1.7 3.1 3 7 3s7-1.3 7-3v-3.8L12 17z"></path></symbol>
+        <symbol id="i-play" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4v16l13-8z"></path></symbol>
+        <symbol id="i-stopwatch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="14" r="8"/><path d="M12 10v4l2.5 2M9 2h6M12 2v4M19 6l1.5-1.5"/></symbol>
+        <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+        <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+        <symbol id="i-trophy" viewBox="0 0 24 24" fill="currentColor"><path d="M7 3h10v2h4v3a4 4 0 0 1-4 4h-.3A5 5 0 0 1 13 15v3h3v3H8v-3h3v-3a5 5 0 0 1-3.7-3H7a4 4 0 0 1-4-4V5h4zm0 4H5v1a2 2 0 0 0 2 2zm10 0v3a2 2 0 0 0 2-2V7z"/></symbol>
+        <!-- Ikon tambahan untuk hasil ujian -->
+        <symbol id="i-chart" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="12" width="4" height="8" rx="1"/><rect x="10" y="5" width="4" height="15" rx="1"/><rect x="16" y="9" width="4" height="11" rx="1"/></symbol>
+        <symbol id="i-save" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v6h8V3M8 21v-7h8v7"/></symbol>
+        <symbol id="i-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></symbol>
+        <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m0 0-4-4m4 4 4-4M5 20h14"/></symbol>
+        <symbol id="i-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></symbol>
+        <symbol id="i-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></symbol>
+        <symbol id="i-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 11v6M12 7.5v.5"/></symbol>
+        <symbol id="i-stop" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></symbol>
+        <symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 7v6M12 17v.5"/></symbol>
+        <symbol id="i-logout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></symbol>
+    </svg>
+    <aside class="sidebar">
+        <div class="brand"><svg><use href="#i-tooth"/></svg><div><b>DENTO-J</b><small>Local Anesthesia Training System</small></div></div>
+        <ul class="nav">
+            <li><a href="index.html"><svg><use href="#i-home"/></svg>Beranda</a></li>
+            <li><a href="mode_latihan.html" ><svg><use href="#i-syringe"/></svg>Latihan</a></li>
+            <li><a href="mode_ujian.html" class="active"><svg><use href="#i-clipboard"/></svg>Ujian</a></li>
+            <li><a href="riwayat.html"><svg><use href="#i-history"/></svg>Riwayat</a></li>
+        </ul>
+        <div class="sidebar-user">
+            <button type="button" class="btn-keluar" id="btnKeluar"><svg><use href="#i-logout"/></svg>Keluar</button>
+        </div>
+    </aside>
+    <main class="main">
+        <nav class="breadcrumb"><a href="index.html"><svg><use href="#i-home"/></svg></a> › Ujian</nav>
+        <header class="exam-head">
+            <span class="exam-head-icon"><svg><use href="#i-clipboard"/></svg></span>
+            <div>
+                <h1>Mode Ujian</h1>
+                <p>Kerjakan 15 soal anestesi berikut dengan waktu 60 detik setiap soal</p>
+            </div>
+            <span class="alat-status" id="alatStatus">Menghubungkan alat…</span>
+        </header>
+        
+        <!-- form -->
+        <form class="exam-form" id="examForm" autocomplete="off">
+            <div class="field">
+                <label for="nama"><svg><use href="#i-user"></use></svg>Nama Lengkap<span class="wajib">*</span></label>
+                <input type="text" id="nama" name="nama" placeholder="Masukan Nama Lengkap" required>
+            </div>
+            <div class="field">
+                <label for="nim"><svg><use href="#i-idcard"/></svg>Nomor Induk Mahasiswa (NIM)<span class="wajib">*</span></label>
+                <input type="text" id="nim" name="nim" placeholder="NIM" required>
+            </div>
+            <div class="field">
+                <label for="kelas"><svg><use href="#i-cap"/></svg>Kelas<span class="wajib">*</span></label>
+                <select id="kelas" name="kelas" required>
+                <option value="" disabled selected>Pilih kelas</option>
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="C">C</option>
+                <option value="D">D</option>
+                <option value="E">E</option>
+                <option value="F">F</option>
+                <option value="G">G</option>
+                </select>
+            </div>
+            <button type="submit" class="btn-start" id="btnStart">
+                <svg><use href="#i-play"/></svg>Mulai Ujian
+            </button>
+        </form>
+        <!-- Area ujian -->
+        <section class="exam-body" id="examBody">
+            <div class="exam-grid">
+                <!-- Kiri: instruksi pengerjaan -->
+                <div class="card instr-card">
+                    <h3 class="card-title"><svg><use href="#i-info"/></svg>Instruksi Pengerjaan Ujian</h3>
+                    <ol class="instr-list">
+                        <li><span class="instr-no">1</span><span>Siapkan phantom dan jarum suntik (jarum suntik dalam keadaan <b>kering</b> dan tidak diisi cairan apapun).</span></li>
+                        <li><span class="instr-no">2</span><span>Pada layar akan muncul <b>nama titik anestesi</b>, Anda dapat melakukan penyuntikan pada phantom menggunakan jarum suntik.</span></li>
+                        <li><span class="instr-no">3</span><span>Anda diberi waktu <b>60 detik</b> untuk melakukan anestesi pada titik tersebut, jika dalam 60 detik Anda tidak berhasil melakukan penyuntikan pada titik yang dimaksud maka Anda dianggap gagal.</span></li>
+                        <li><span class="instr-no">4</span><span>Jika Anda berhasil melakukan penyuntikan pada titik yang dimaksud maka akan muncul notifikasi berupa <b class="hijau">tulisan, suara dan warna hijau</b>.</span></li>
+                        <li><span class="instr-no">5</span><span>Setelah Anda berhasil/ gagal pada soal pertama maka Anda dapat melanjutkan ke soal berikutnya hingga seluruh titik (<b>15 titik</b>) pada phantom teranestesi.</span></li>
+                    </ol>
+                </div>
+
+                <!-- Kanan: soal aktif + timer + progress -->
+                <div class="card soal-card">
+                    <div class="soal-head">
+                        <h3 id="qCounter">Soal <b>-</b> dari 15</h3>
+                        <div class="timer-card" id="timerCard">
+                            <svg class="timer-icon"><use href="#i-stopwatch"/></svg>
+                            <div><b id="timerText">01:00</b><small id="timerLabel">Waktu per soal</small></div>
+                        </div>
+                    </div>
+
+                    <p class="soal-label">Lakukan anestesi pada titik berikut:</p>
+                    <strong class="target-box" id="qTarget">Isi data peserta, lalu tekan Mulai Ujian</strong>
+
+                    <div class="progress-box">
+                        <div class="progress-box-head">
+                            <h4>Progress Soal</h4>
+                            <span class="progress-count" id="progressCount">0 / 15</span>
+                        </div>
+                        <div class="progress-grid" id="progressGrid"></div>
+                    </div>
+
+                    <div class="soal-foot">
+                        <button type="button" class="btn-stop" id="btnStop" hidden><svg><use href="#i-stop"/></svg>Berhenti Ujian</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== BAR HASIL UJIAN (muncul setelah ujian selesai) ===== -->
+            <div class="result-bar" id="resultBar" hidden>
+                <div class="card rb-peserta">
+                    <span>Nama</span><span>:</span><span id="rbNama">-</span>
+                    <span>NIM</span><span>:</span><span id="rbNim">-</span>
+                    <span>Kelas</span><span>:</span><span id="rbKelas">-</span>
+                    <span>Tanggal</span><span>:</span><span id="rbTanggal">-</span>
+                </div>
+
+                <button type="button" class="rb-skor ok" id="rbBenar" title="Lihat titik yang berhasil">
+                    <span class="rb-ikon"><svg><use href="#i-check"/></svg></span>
+                    <span><b id="rbBenarN">0</b><small>Titik Berhasil Dianestesi</small></span>
+                </button>
+
+                <button type="button" class="rb-skor fail" id="rbSalah" title="Lihat titik yang gagal">
+                    <span class="rb-ikon"><svg><use href="#i-x"/></svg></span>
+                    <span><b id="rbSalahN">0</b><small>Titik Gagal Dianestesi</small></span>
+                </button>
+
+                <div class="card rb-detail">
+                    <h4>Detail Hasil</h4>
+                    <div class="rb-dots" id="rbDots"></div>
+                </div>
+
+                <div class="rb-aksi">
+                    <button type="button" class="btn-start" id="rbRekap"><svg><use href="#i-chart"/></svg>Lihat Rekap Hasil</button>
+                    <div class="rb-aksi-row">
+                        <button type="button" class="btn-sec" id="rbSimpan"><svg><use href="#i-save"/></svg><span>Simpan</span></button>
+                        <button type="button" class="btn-sec" id="rbBaru"><svg><use href="#i-refresh"/></svg>Ujian Baru</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pop-up konfirmasi Berhenti Ujian -->
+        <dialog class="result-dialog warn" id="stopDialog">
+            <div class="result-icon"><svg><use href="#i-alert"/></svg></div>
+            <h2>Berhenti Ujian?</h2>
+            <p>Anda yakin untuk tidak melanjutkan ujian?<br><small style="color:var(--muted)">Jawaban yang sudah dikerjakan tidak akan disimpan.</small></p>
+            <div class="konfirm-foot">
+                <button type="button" class="btn-sec" id="stopBatal">Lanjutkan Ujian</button>
+                <button type="button" class="btn-danger" id="stopYa">Ya, Berhenti</button>
+            </div>
+        </dialog>
+
+        <!-- Pop-up hasil (dipakai untuk Berhasil, Salah, Waktu Habis, dan Ujian Selesai) -->
+        <dialog class="result-dialog" id="resultDialog">
+            <div class="result-icon" id="rIcon"></div>
+            <h2 id="rTitle"></h2>
+            <p id="rText"></p>
+            <button class="btn-start" id="rButton">Lanjut ke Soal Berikutnya</button>
+        </dialog>
+
+        <!-- Pop-up detail satu titik (tampilan sama dengan pop-up saat ujian) -->
+        <dialog class="result-dialog" id="detailDialog">
+            <span class="dlg-soal" id="dSoal"></span>
+            <div class="result-icon" id="dIcon"></div>
+            <h2 id="dTitle"></h2>
+            <p id="dText"></p>
+            <p class="dlg-meta" id="dMeta"></p>
+            <div class="dlg-foot">
+                <button type="button" class="btn-sec" id="dPrev" title="Soal sebelumnya"><svg><use href="#i-left"/></svg></button>
+                <button type="button" class="btn-start" id="dClose">Tutup</button>
+                <button type="button" class="btn-sec" id="dNext" title="Soal berikutnya"><svg><use href="#i-right"/></svg></button>
+            </div>
+        </dialog>
+
+        <!-- Pop-up daftar titik benar / salah -->
+        <dialog class="result-dialog wide" id="listDialog">
+            <div class="dlg-head">
+                <div class="result-icon" id="lIcon"></div>
+                <div><h2 id="lTitle"></h2><span class="dlg-sub" id="lSub"></span></div>
+            </div>
+            <div class="dlg-list" id="lList"></div>
+            <div class="dlg-foot">
+                <button type="button" class="btn-start" data-close>Tutup</button>
+            </div>
+        </dialog>
+
+        <!-- Pop-up rekap lengkap -->
+        <dialog class="result-dialog wide" id="rekapDialog">
+            <div class="dlg-head">
+                <div class="result-icon"><svg><use href="#i-chart"/></svg></div>
+                <div><h2>Rekap Hasil Ujian</h2><span class="dlg-sub" id="rkSub"></span></div>
+            </div>
+            <div class="rekap-sum" id="rkSum"></div>
+            <div class="rekap-wrap">
+                <table class="rekap-table">
+                    <thead><tr><th>Soal</th><th>Titik</th><th>Status</th><th>Waktu</th></tr></thead>
+                    <tbody id="rkBody"></tbody>
+                </table>
+            </div>
+            <div class="dlg-foot">
+                <button type="button" class="btn-sec" id="rkCsv"><svg><use href="#i-download"/></svg>Unduh CSV</button>
+                <button type="button" class="btn-start" data-close>Tutup</button>
+            </div>
+        </dialog>
+
+        <div class="toast" id="toast"></div>
+    </main>
+    <script>
+        /* ========== 1. PENGATURAN ========== */
+        const DURASI_SOAL = 60;                               // detik per soal
+        const KUNCI_RIWAYAT   = 'dentoj_riwayat';
+        const ENDPOINT_SIMPAN = '/api/riwayat';
+        const KUNCI_SESI = 'dentoj_sesi';
+        const MODE_LOKAL = ['127.0.0.1', 'localhost'].includes(location.hostname);
+        /* ========== 2. DATA 15 TITIK ========== */
+        const TITIK = [
+        { id: 1,  nama: 'Nervus Alveolaris Inferior kanan' },
+        { id: 2,  nama: 'Nervus Alveolaris Inferior kiri' },
+        { id: 3,  nama: 'Nervus Mentalis kanan' },
+        { id: 4,  nama: 'Nervus Mentalis kiri' },
+        { id: 5,  nama: 'Nervus Nasopalatinus' },
+        { id: 6,  nama: 'Nervus Palatinus mayor kanan' },
+        { id: 7,  nama: 'Nervus Palatinus mayor kiri' },
+        { id: 8,  nama: 'Nervus Infraorbital kanan' },
+        { id: 9,  nama: 'Nervus Infraorbital kiri' },
+        { id: 10, nama: 'Nervus Anterior Superior Alveolar kanan' },
+        { id: 11, nama: 'Nervus Anterior Superior Alveolar kiri' },
+        { id: 12, nama: 'Nervus Middle Superior Alveolar kanan' },
+        { id: 13, nama: 'Nervus Middle Superior Alveolar kiri' },
+        { id: 14, nama: 'Nervus Posterior Superior Alveolar kanan' },
+        { id: 15, nama: 'Nervus Posterior Superior Alveolar kiri' },
+        ];
+
+        /* ========== 3. ELEMEN HALAMAN ========== */
+        const $ = (id) => document.getElementById(id);
+        const examForm = $('examForm'),   examBody = $('examBody'),
+            qCounter = $('qCounter'),   qTarget  = $('qTarget'),
+            timerCard = $('timerCard'), timerText = $('timerText'), timerLabel = $('timerLabel'),
+            progressGrid = $('progressGrid'), progressCount = $('progressCount'),
+            resultDialog = $('resultDialog'), rIcon = $('rIcon'), rTitle = $('rTitle'),
+            rText = $('rText'), rButton = $('rButton'),
+            resultBar = $('resultBar'), detailDialog = $('detailDialog'),
+            listDialog = $('listDialog'), rekapDialog = $('rekapDialog');
+
+        /* ========== 4. STATUS UJIAN ========== */
+        let peserta = null;          // data dari formulir
+        let urutan  = [];            // 15 titik yang sudah diacak
+        let indeks  = 0;             // posisi soal sekarang (0–14)
+        let hasil   = [];            // catatan jawaban tiap soal
+        let deadline = 0;            // waktu (ms) saat soal berakhir
+        let timerId  = null;
+        let menungguJawaban = false; // true hanya saat soal aktif dan belum dijawab
+        let ujianBerjalan = false;
+        let rekapTerakhir = null;    // hasil ujian terakhir (untuk bar hasil & simpan)
+        let sudahDisimpan = false;
+        let statusSimpan = 'awal';
+        let detailIdx = 0;           // posisi pop-up detail yang sedang dibuka
+
+        const esc = (s) => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+        /* ========== 5. TOMBOL MULAI ========== */
+        examForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        peserta = {
+            nama:  examForm.nama.value.trim(),
+            nim:   examForm.nim.value.trim(),
+            kelas: examForm.kelas.value,
+            mulai: new Date().toISOString()
+        };
+        kunciForm(true);
+        mulaiUjian();
+        });
+
+        /* Sesi login (dibuat di index.html) */
+        function bacaSesi()  { try { return JSON.parse(sessionStorage.getItem(KUNCI_SESI)); } catch { return null; } }
+        function hapusSesi() {
+            try { sessionStorage.removeItem(KUNCI_SESI); } catch {}
+            try { sessionStorage.removeItem('dentoj_akses_riwayat'); } catch {}
+        }
+
+        function kunciForm(kunci) {
+        examForm.querySelectorAll('input, select, button').forEach(el => el.disabled = kunci);
+        }
+
+        function mulaiUjian() {
+            urutan = acak(TITIK);
+            indeks = 0;
+            hasil  = [];
+            ujianBerjalan = true;
+            $('btnStop').hidden = false;
+            resultBar.hidden = true;
+            progressGrid.querySelectorAll('.q-dot').forEach(d => d.className = 'q-dot');   // bersihkan warna
+            examBody.scrollIntoView({ behavior: 'smooth' });
+
+            console.log('%cUJIAN DIMULAI', 'color:#1d6fe0;font-weight:bold;font-size:14px');
+            console.log('Simulasi sensor:  sensor(nomorTitik)  |  jawabBenar()  |  jawabSalah()');
+            tampilkanSoal();
+        }
+
+        /* ========== 6. ACAK URUTAN (Fisher–Yates) ========== */
+        function acak(daftar) {
+        const a = [...daftar];
+        for (let i = a.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+        }
+        /* ========== TAMPILAN AWAL (sebelum ujian dimulai) ========== */
+        function formatWaktu(detik) {
+        return `${String(Math.floor(detik / 60)).padStart(2, '0')}:${String(detik % 60).padStart(2, '0')}`;
+        }
+
+        function tampilanAwal() {
+        qCounter.innerHTML    = `Soal <b>-</b> dari ${TITIK.length}`;
+        progressCount.textContent = `0 / ${TITIK.length}`;
+        qTarget.textContent   = 'Isi data peserta, lalu tekan Mulai Ujian';
+        timerCard.className   = 'timer-card';
+        timerText.textContent = formatWaktu(DURASI_SOAL);
+        timerLabel.textContent = 'Waktu per soal';
+        progressGrid.innerHTML = TITIK.map((_, i) => `<span class="q-dot">${i + 1}</span>`).join('');
+        }
+
+        /* ========== 7. MENAMPILKAN SOAL ========== */
+        function tampilkanSoal() {
+        const soal = urutan[indeks];
+        qCounter.innerHTML   = `Soal <b>${indeks + 1}</b> dari ${urutan.length}`;
+        qTarget.textContent  = soal.nama;
+
+        progressGrid.children[indeks].classList.add('active');
+        timerCard.className = 'timer-card';
+        timerLabel.textContent = 'Waktu tersisa';
+
+        console.log(`Soal ${indeks + 1}: titik ${soal.id} – ${soal.nama}`);
+        menungguJawaban = true;
+        mulaiTimer();
+        }
+
+        /* ========== 8. TIMER 60 DETIK ========== */
+        function mulaiTimer() {
+        clearInterval(timerId);
+        deadline = Date.now() + DURASI_SOAL * 1000;
+        perbaruiTimer();
+        timerId = setInterval(perbaruiTimer, 250);
+        }
+
+        function sisaDetik() {
+        return Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+        }
+
+        function perbaruiTimer() {
+        const s = sisaDetik();
+        timerText.textContent = formatWaktu(s);
+        timerCard.classList.toggle('is-warning', s > 0 && s <= 10);
+        if (s === 0) selesaikanSoal('habis');
+        }
+
+        /* ========== 9. PINTU MASUK JAWABAN (sensor / simulasi) ========== */
+        function terimaSensor(idTitik) {
+        idTitik = Number(idTitik);
+        if (!menungguJawaban) {
+            console.warn(`Sinyal titik ${idTitik} diabaikan: tidak ada soal aktif.`);
+            return;
+        }
+        if (!TITIK.some(t => t.id === idTitik)) {
+            console.warn('Nomor titik tidak dikenal:', idTitik);
+            return;
+        }
+        const benar = idTitik === urutan[indeks].id;
+        selesaikanSoal(benar ? 'benar' : 'salah', idTitik);
+        }
+
+        /* ========== 10. MENUTUP SATU SOAL ========== */
+        // Isi pop-up per status — dipakai saat ujian DAN saat melihat detail hasil
+        function infoStatus(h) {
+        if (h.status === 'benar') {
+            return { jenis: 'ok', ikon: 'i-check', judul: 'Berhasil!',
+                    teks: `<b>${esc(h.nama)}</b> berhasil dianestesi.` };
+        }
+        if (h.status === 'habis') {
+            return { jenis: 'fail', ikon: 'i-x', judul: 'Waktu Habis',
+                    teks: `<b>${esc(h.nama)}</b> tidak berhasil dianestesi dalam ${DURASI_SOAL} detik.` };
+        }
+        const salah = TITIK.find(t => t.id === h.titikDitekan);
+        return { jenis: 'fail', ikon: 'i-x', judul: 'Titik Salah',
+                teks: `Anda menganestesi <b>${esc(salah ? salah.nama : 'titik lain')}</b>.<br>Seharusnya <b>${esc(h.nama)}</b>.` };
+        }
+
+        function selesaikanSoal(status, idDitekan = null) {
+        if (!menungguJawaban) return;        // cegah dijalankan dua kali
+        menungguJawaban = false;
+        clearInterval(timerId);
+
+        const soal  = urutan[indeks];
+        const waktu = DURASI_SOAL - sisaDetik();
+        const catatan = { no: indeks + 1, titik: soal.id, nama: soal.nama, status, titikDitekan: idDitekan, waktuDetik: waktu };
+        hasil.push(catatan);
+
+        const dot = progressGrid.children[indeks];
+        dot.classList.remove('active');
+        dot.classList.add(status === 'benar' ? 'ok' : 'fail');
+        progressCount.textContent = `${hasil.length} / ${urutan.length}`;
+
+        timerCard.classList.remove('is-warning');
+        timerCard.classList.add(status === 'benar' ? 'is-success' : 'is-fail');
+        if (status === 'habis') timerLabel.textContent = 'Waktu habis';
+
+        const tombol = indeks === urutan.length - 1 ? 'Lihat Hasil Ujian' : 'Lanjut ke Soal Berikutnya';
+        const s = infoStatus(catatan);
+        tampilkanPopup(s.jenis, s.ikon, s.judul, s.teks, tombol);
+        console.log(`→ ${status.toUpperCase()} (${waktu} detik)`);
+        }
+
+        /* ========== 11. POP-UP ========== */
+        let aksiTombol = null;
+
+        function tampilkanPopup(jenis, ikon, judul, teksHTML, labelTombol, aksi = lanjutSoal) {
+        resultDialog.className = `result-dialog ${jenis}`;
+        rIcon.innerHTML = `<svg><use href="#${ikon}"/></svg>`;
+        rTitle.textContent = judul;
+        rText.innerHTML = teksHTML;
+        rButton.textContent = labelTombol;
+        aksiTombol = aksi;
+        resultDialog.showModal();
+        }
+
+        rButton.addEventListener('click', () => { resultDialog.close(); aksiTombol(); });
+        resultDialog.addEventListener('cancel', (e) => e.preventDefault());   // tombol Esc dimatikan
+
+        function lanjutSoal() {
+        indeks++;
+        if (indeks < urutan.length) tampilkanSoal();
+        else selesaiUjian();
+        }
+
+        /* ========== 11b. BERHENTI UJIAN ========== */
+        const stopDialog = $('stopDialog');
+        let sisaMsJeda = 0;          // sisa waktu saat timer dijeda
+        let soalDijeda = false;
+
+        $('btnStop').addEventListener('click', () => {
+            if (!ujianBerjalan) return;
+            // Jeda timer & abaikan sensor selama pop-up konfirmasi terbuka
+            if (menungguJawaban) {
+                sisaMsJeda = Math.max(0, deadline - Date.now());
+                clearInterval(timerId);
+                menungguJawaban = false;
+                soalDijeda = true;
+            }
+            stopDialog.showModal();
+        });
+
+        // Lanjutkan: timer berjalan lagi dari sisa waktu sebelumnya
+        function lanjutkanUjian() {
+            stopDialog.close();
+            if (soalDijeda) {
+                soalDijeda = false;
+                deadline = Date.now() + sisaMsJeda;
+                menungguJawaban = true;
+                perbaruiTimer();
+                timerId = setInterval(perbaruiTimer, 250);
+            }
+        }
+        $('stopBatal').addEventListener('click', lanjutkanUjian);
+        stopDialog.addEventListener('cancel', (e) => { e.preventDefault(); lanjutkanUjian(); });   // tombol Esc = lanjutkan
+
+        // Ya, berhenti: ujian dibatalkan tanpa menyimpan hasil
+        $('stopYa').addEventListener('click', () => {
+            stopDialog.close();
+            clearInterval(timerId);
+            soalDijeda = false;
+            menungguJawaban = false;
+            ujianBerjalan = false;
+            $('btnStop').hidden = true;
+            hasil = [];
+            console.log('%cUJIAN DIHENTIKAN', 'color:#dc2626;font-weight:bold;font-size:14px');
+            resetUjian();
+        });
+
+        /* ========== 12. UJIAN SELESAI ========== */
+        function selesaiUjian() {
+            ujianBerjalan = false;
+            $('btnStop').hidden = true;
+            const nilai = hasil.filter(h => h.status === 'benar').length;
+            rekapTerakhir = {
+                id: `${peserta.nim}-${Date.now()}`,        // unik per mahasiswa & waktu
+                ...peserta,
+                selesai: new Date().toISOString(),
+                nilai, maks: urutan.length, detail: hasil
+            };
+            sudahDisimpan = false;
+            statusSimpan  = 'awal';
+
+            console.log('%cUJIAN SELESAI', 'color:#22a447;font-weight:bold;font-size:14px');
+            console.table(hasil);
+
+            tampilkanPopup('info', 'i-trophy', 'Ujian Selesai',
+                `${esc(peserta.nama)}, nilai Anda <b>${nilai} dari ${urutan.length}</b>.`, 'Lihat Hasil', tampilkanHasil);
+
+            simpanHasil();          // ← otomatis, tanpa menunggu tombol ditekan
+        }
+
+        function resetUjian() {
+            resultBar.hidden = true;
+            $('btnStop').hidden = true;
+            rekapTerakhir = null;
+            sudahDisimpan = false;
+            statusSimpan  = 'awal';
+            kunciForm(false);
+            examForm.reset();
+            tampilanAwal();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        /* ========== 13. BAR HASIL UJIAN ========== */
+        function formatTanggal(iso) {
+        const d = new Date(iso);
+        const bln = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+        const p = n => String(n).padStart(2, '0');
+        return `${d.getDate()} ${bln[d.getMonth()]} ${d.getFullYear()}, ${p(d.getHours())}:${p(d.getMinutes())}`;
+        }
+
+        const jumlahBenar = () => rekapTerakhir.detail.filter(h => h.status === 'benar').length;
+
+        function tampilkanHasil() {
+            const r = rekapTerakhir;
+            $('rbNama').textContent    = r.nama;
+            $('rbNim').textContent     = r.nim;
+            $('rbKelas').textContent   = r.kelas;
+            $('rbTanggal').textContent = formatTanggal(r.selesai);
+            $('rbBenarN').textContent  = jumlahBenar();
+            $('rbSalahN').textContent  = r.maks - jumlahBenar();
+
+            // Bulatan detail: nomor = urutan soal (sama dengan Progress Soal)
+            $('rbDots').innerHTML = r.detail.map(h =>
+                `<button type="button" class="rb-dot ${h.status === 'benar' ? '' : 'fail'}" data-no="${h.no}" title="Soal ${h.no}: ${esc(h.nama)}">${h.no}</button>`
+            ).join('');
+
+            aturTombolSimpan(statusSimpan);   // tampilkan status simpan yang sebenarnya
+            resultBar.hidden = false;
+            resultBar.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        $('rbBenar').addEventListener('click', () => bukaDaftar(true));
+        $('rbSalah').addEventListener('click', () => bukaDaftar(false));
+        $('rbRekap').addEventListener('click', bukaRekap);
+        $('rbSimpan').addEventListener('click', simpanHasil);
+        $('rbBaru').addEventListener('click', () => {
+        if (!sudahDisimpan && !confirm('Hasil ujian ini belum disimpan. Tetap mulai ujian baru?')) return;
+        resetUjian();
+        });
+        $('rbDots').addEventListener('click', (e) => {
+        const b = e.target.closest('[data-no]');
+        if (b) bukaDetail(Number(b.dataset.no));
+        });
+
+        /* ========== 14. POP-UP HASIL (detail, daftar, rekap) ========== */
+        function tutupSemuaDialog() {
+        [detailDialog, listDialog, rekapDialog].forEach(d => d.open && d.close());
+        }
+
+        // Detail satu soal — tampilan sama seperti pop-up saat menjawab
+        function bukaDetail(no) {
+        const d = rekapTerakhir.detail;
+        detailIdx = d.findIndex(h => h.no === no);
+        const h = d[detailIdx];
+        const s = infoStatus(h);
+
+        detailDialog.className = `result-dialog ${s.jenis}`;
+        $('dSoal').textContent  = `Soal ${h.no} dari ${d.length}`;
+        $('dIcon').innerHTML    = `<svg><use href="#${s.ikon}"/></svg>`;
+        $('dTitle').textContent = s.judul;
+        $('dText').innerHTML    = s.teks;
+        $('dMeta').textContent  = `Waktu pengerjaan: ${h.waktuDetik} detik`;
+
+        tutupSemuaDialog();
+        detailDialog.showModal();
+        }
+
+        function geserDetail(arah) {
+        const d = rekapTerakhir.detail;
+        bukaDetail(d[(detailIdx + arah + d.length) % d.length].no);
+        }
+        $('dPrev').addEventListener('click', () => geserDetail(-1));
+        $('dNext').addEventListener('click', () => geserDetail(1));
+        $('dClose').addEventListener('click', () => detailDialog.close());
+
+        // Daftar titik berhasil / gagal
+        function keterangan(h) {
+        if (h.status === 'benar') return 'Berhasil dianestesi';
+        if (h.status === 'habis') return 'Waktu habis';
+        const t = TITIK.find(x => x.id === h.titikDitekan);
+        return `Salah titik: ${t ? t.nama : '-'}`;
+        }
+
+        function bukaDaftar(benar) {
+        const semua = rekapTerakhir.detail;
+        const list  = semua.filter(h => (h.status === 'benar') === benar);
+
+        listDialog.className   = `result-dialog wide ${benar ? 'ok' : 'fail'}`;
+        $('lIcon').innerHTML   = `<svg><use href="#${benar ? 'i-check' : 'i-x'}"/></svg>`;
+        $('lTitle').textContent = benar ? 'Titik Berhasil Dianestesi' : 'Titik Gagal Dianestesi';
+        $('lSub').textContent   = `${list.length} dari ${semua.length} soal — klik untuk melihat detail`;
+        $('lList').innerHTML = list.length
+            ? list.map(h => `
+                <button type="button" class="dlg-item" data-no="${h.no}">
+                <span class="dlg-no">${h.no}</span>
+                <span class="dlg-nama">${esc(h.nama)}<small>${esc(keterangan(h))}</small></span>
+                <span class="dlg-waktu">${h.waktuDetik} dtk ›</span>
+                </button>`).join('')
+            : `<p class="dlg-empty">Tidak ada titik yang ${benar ? 'berhasil' : 'gagal'} dianestesi.</p>`;
+
+        tutupSemuaDialog();
+        listDialog.showModal();
+        }
+        $('lList').addEventListener('click', (e) => {
+        const b = e.target.closest('[data-no]');
+        if (b) bukaDetail(Number(b.dataset.no));
+        });
+
+        // Rekap lengkap
+        function bukaRekap() {
+        const r = rekapTerakhir;
+        const benar = jumlahBenar();
+        $('rkSub').textContent = `${r.nama} · ${r.nim} · Kelas ${r.kelas} · ${formatTanggal(r.selesai)}`;
+        $('rkSum').innerHTML = `
+            <div><b style="color:#15803d">${benar}</b>Berhasil</div>
+            <div><b style="color:#dc2626">${r.maks - benar}</b>Gagal</div>
+            <div><b>${Math.round(benar / r.maks * 100)}</b>Nilai (0–100)</div>`;
+        $('rkBody').innerHTML = r.detail.map(h => `
+            <tr data-no="${h.no}">
+            <td>${h.no}</td>
+            <td>${esc(h.nama)}</td>
+            <td><span class="tag ${h.status === 'benar' ? 'ok' : 'fail'}">${h.status === 'benar' ? 'Berhasil' : h.status === 'habis' ? 'Waktu habis' : 'Salah titik'}</span></td>
+            <td>${h.waktuDetik} dtk</td>
+            </tr>`).join('');
+
+        tutupSemuaDialog();
+        rekapDialog.showModal();
+        }
+        $('rkBody').addEventListener('click', (e) => {
+        const tr = e.target.closest('[data-no]');
+        if (tr) bukaDetail(Number(tr.dataset.no));
+        });
+        $('rkCsv').addEventListener('click', unduhCSV);
+
+        // Tombol "Tutup" & klik di luar kotak untuk dialog hasil
+        [detailDialog, listDialog, rekapDialog].forEach(dlg => {
+        dlg.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => dlg.close()));
+        dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
+        });
+
+        /* ========== 15. SIMPAN HASIL UJIAN ========== */
+        function aturTombolSimpan(keadaan) {
+            statusSimpan = keadaan;
+            const btn = $('rbSimpan');
+            btn.classList.toggle('saved', keadaan === 'tersimpan');
+            btn.disabled = keadaan !== 'awal';
+            btn.querySelector('span').textContent =
+                { awal: 'Simpan', proses: 'Menyimpan…', tersimpan: 'Tersimpan', antre: 'Menunggu kirim' }[keadaan];
+            btn.querySelector('use').setAttribute('href', keadaan === 'tersimpan' ? '#i-check' : '#i-save');
+        }
+
+        // Antrean di browser (dipakai jika ESP32 tidak terjangkau)
+        function bacaAntrean()  { try { return JSON.parse(localStorage.getItem(KUNCI_RIWAYAT)) || []; } catch { return []; } }
+        function tulisAntrean(d) { try { localStorage.setItem(KUNCI_RIWAYAT, JSON.stringify(d)); } catch {} }
+
+        // Kirim satu rekap ke ESP32 (batas tunggu 5 detik)
+        async function kirimKeServer(data) {
+            const ctrl = new AbortController();
+            const batas = setTimeout(() => ctrl.abort(), 5000);
+            try {
+                const res = await fetch(ENDPOINT_SIMPAN, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data),
+                    signal: ctrl.signal
+                });
+                return res.ok;
+            } catch {
+                return false;
+            } finally {
+                clearTimeout(batas);
+            }
+        }
+
+        async function simpanHasil() {
+            if (!rekapTerakhir || sudahDisimpan || statusSimpan === 'proses') return;
+            aturTombolSimpan('proses');
+
+            try {
+                // Uji di Live Server: cukup simpan di browser
+                if (MODE_LOKAL) {
+                    const a = bacaAntrean(); a.push(rekapTerakhir); tulisAntrean(a);
+                    sudahDisimpan = true;
+                    aturTombolSimpan('tersimpan');
+                    toast('Mode uji lokal: hasil disimpan di browser ini');
+                    return;
+                }
+
+                // Kirim ke ESP32
+                if (await kirimKeServer(rekapTerakhir)) {
+                    sudahDisimpan = true;
+                    aturTombolSimpan('tersimpan');
+                    toast('Hasil ujian tersimpan di DENTO-J');
+                    return;
+                }
+
+                // Gagal → masuk antrean, dikirim otomatis nanti
+                const a = bacaAntrean(); a.push(rekapTerakhir); tulisAntrean(a);
+                sudahDisimpan = true;
+                aturTombolSimpan('antre');
+                toast('Perangkat tidak terjangkau. Hasil disimpan sementara dan dikirim otomatis nanti.');
+
+            } catch (err) {
+                console.error('Gagal menyimpan:', err);
+                aturTombolSimpan('awal');                 // tombol aktif kembali, bisa dicoba lagi
+                toast('Terjadi kesalahan saat menyimpan. Coba tekan Simpan lagi.');
+            }
+        }
+
+        // Mengirim ulang hasil yang tertunda saat halaman dibuka
+        async function kirimAntrean() {
+            if (MODE_LOKAL) return;
+            const a = bacaAntrean();
+            if (!a.length) return;
+            const gagal = [];
+            for (const r of a) if (!(await kirimKeServer(r))) gagal.push(r);
+            tulisAntrean(gagal);
+            const terkirim = a.length - gagal.length;
+            if (terkirim) toast(`${terkirim} hasil ujian tertunda berhasil dikirim`);
+        }
+
+        function unduhCSV() {
+            const r = rekapTerakhir;
+            const sel = v => `"${String(v).replace(/"/g, '""')}"`;
+            const baris = [
+                ['Nama', r.nama], ['NIM', r.nim], ['Kelas', r.kelas], ['Tanggal', formatTanggal(r.selesai)],
+                ['Nilai', `${r.nilai} dari ${r.maks}`], [],
+                ['Soal', 'Titik', 'Status', 'Titik Ditekan', 'Waktu (detik)'],
+                ...r.detail.map(h => [h.no, h.nama,
+                    { benar: 'Berhasil', salah: 'Salah titik', habis: 'Waktu habis' }[h.status],
+                    (TITIK.find(t => t.id === h.titikDitekan) || {}).nama || '', h.waktuDetik])
+        ];
+            const csv = '\ufeff' + baris.map(b => b.map(sel).join(';')).join('\r\n'); // \ufeff agar Excel baca UTF-8
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+            a.download = `DENTO-J_${r.nim.replace(/\W+/g, '_')}_${r.id}.csv`;
+            a.click();
+            setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+        }
+
+            let toastId = null;
+            function toast(pesan) {
+            const t = $('toast');
+            t.textContent = pesan;
+            t.classList.add('show');
+            clearTimeout(toastId);
+            toastId = setTimeout(() => t.classList.remove('show'), 2800);
+        }
+
+        /* ========== 16. SIMULASI LEWAT CONSOLE ========== */
+        window.sensor = terimaSensor;
+        window.jawabBenar = () => menungguJawaban
+        ? terimaSensor(urutan[indeks].id)
+        : console.warn('Tidak ada soal aktif.');
+        window.jawabSalah = () => {
+        if (!menungguJawaban) return console.warn('Tidak ada soal aktif.');
+        const lain = acak(TITIK.filter(t => t.id !== urutan[indeks].id))[0];
+        terimaSensor(lain.id);
+        };
+
+        /* ========== 17. PERINGATAN JIKA HALAMAN DITUTUP ========== */
+        window.addEventListener('beforeunload', (e) => {
+            const hasilBelumDisimpan = rekapTerakhir && !sudahDisimpan;
+            if (ujianBerjalan || hasilBelumDisimpan) { e.preventDefault(); e.returnValue = ''; }
+        });
+        
+        /* ========== 18. KONEKSI SENSOR (alat → web, lewat WebSocket port 81) ========== */
+        // Mode Ujian hanya MENERIMA dari sensor; tidak mengirim apa pun ke alat,
+        // sehingga DFPlayer tidak pernah menyebut nama titik yang sedang ditanyakan.
+        const alatStatus = $('alatStatus');
+
+        function setStatusAlat(terhubung, teks) {
+            alatStatus.classList.toggle('on', terhubung);
+            alatStatus.textContent = teks || (terhubung ? 'Alat terhubung' : 'Alat tidak terhubung');
+        }
+
+        function sambungSensor() {
+            if (MODE_LOKAL) return setStatusAlat(false, 'Mode uji lokal (tanpa alat)');
+
+            const ws = new WebSocket(`ws://${location.hostname}:81/`);
+            ws.onopen  = () => setStatusAlat(true);
+            ws.onclose = () => { setStatusAlat(false); setTimeout(sambungSensor, 3000); };   // coba lagi tiap 3 detik
+            ws.onerror = () => ws.close();
+            ws.onmessage = (e) => {
+                let data;
+                try { data = JSON.parse(e.data); } catch { return; }
+                if (data.tipe === 'sensor') terimaSensor(data.titik);
+            };
+        }
+
+        /* ========== 19. TOMBOL KELUAR (sama dengan index.html) ========== */
+        $('btnKeluar').addEventListener('click', async () => {
+            const sesi = bacaSesi();
+            if (!MODE_LOKAL && sesi) {
+                try { await fetch('/api/logout', { method: 'POST', headers: { 'X-Token': sesi.token } }); } catch {}
+            }
+            hapusSesi();
+            location.replace('index.html');   // index.html otomatis menampilkan halaman login
+        });
+
+        /* ========== 20. JALANKAN ========== */
+        tampilanAwal();
+        sambungSensor();
+        kirimAntrean();
+    </script>
+</body>
+</html>
