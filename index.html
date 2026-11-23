@@ -5,9 +5,6 @@
         <title>DENTO-J Local Anesthesia Training System</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
         <link rel="stylesheet" href="style.css"/>
-        <!-- <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet"> -->
 
         <style>
             /* Atribut hidden harus selalu menang atas display:flex/grid dari style.css */
@@ -272,7 +269,8 @@
 
             /* ================= 2. LOGIN ================= */
             const KUNCI_SESI = 'dentoj_sesi';   // sama dengan riwayat.html, jadi Riwayat tidak minta login lagi
-            const MODE_LOKAL = ['127.0.0.1', 'localhost'].includes(location.hostname);   // uji di Live Server
+            const MODE_LOKAL = ['127.0.0.1', 'localhost'].includes(location.hostname)
+                || location.hostname.endsWith('.github.io');
 
             const loginView  = $('loginView');
             const appView    = $('appView');
