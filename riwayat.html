@@ -346,7 +346,9 @@
             const KUNCI_SESI  = 'dentoj_akses_riwayat';   // terpisah dari login Beranda
             const KUNCI_LOKAL = 'dentoj_riwayat';
             // Uji coba di Live Server: login tidak dicek, data dari browser
-            const MODE_LOKAL = ['127.0.0.1', 'localhost'].includes(location.hostname);
+            // const MODE_LOKAL = ['127.0.0.1', 'localhost'].includes(location.hostname);
+            const MODE_LOKAL = ['127.0.0.1', 'localhost'].includes(location.hostname)
+                || location.hostname.endsWith('.github.io');
             const LABEL_STATUS = {benar:'Berhasil', salah:'Salah titik', habis:'Waktu Habis'}
 
             const TITIK = [
