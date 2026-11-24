@@ -480,7 +480,7 @@
             <span class="exam-head-icon"><svg><use href="#i-clipboard"/></svg></span>
             <div>
                 <h1>Mode Ujian</h1>
-                <p>Kerjakan 15 soal anestesi berikut dengan waktu 60 detik setiap soal</p>
+                <p>Isi data diri Anda (Nama, NIM, dan Kelas) kemudian baca instruksi pengerjaan ujian</p>
             </div>
             <span class="alat-status" id="alatStatus">Menghubungkan alat…</span>
         </header>
@@ -520,7 +520,7 @@
                     <h3 class="card-title"><svg><use href="#i-info"/></svg>Instruksi Pengerjaan Ujian</h3>
                     <ol class="instr-list">
                         <li><span class="instr-no">1</span><span>Siapkan phantom dan jarum suntik (jarum suntik dalam keadaan <b>kering</b> dan tidak diisi cairan apapun).</span></li>
-                        <li><span class="instr-no">2</span><span>Pada layar akan muncul <b>nama titik anestesi</b>, Anda dapat melakukan penyuntikan pada phantom menggunakan jarum suntik.</span></li>
+                        <li><span class="instr-no">2</span><span>Setelah klik <b>Mulai Ujian</b>, pada layar akan muncul <b>Nama Titik Anestesi</b>, Anda dapat melakukan penyuntikan pada phantom menggunakan jarum suntik</span></li>
                         <li><span class="instr-no">3</span><span>Anda diberi waktu <b>60 detik</b> untuk melakukan anestesi pada titik tersebut, jika dalam 60 detik Anda tidak berhasil melakukan penyuntikan pada titik yang dimaksud maka Anda dianggap gagal.</span></li>
                         <li><span class="instr-no">4</span><span>Jika Anda berhasil melakukan penyuntikan pada titik yang dimaksud maka akan muncul notifikasi berupa <b class="hijau">tulisan, suara dan warna hijau</b>.</span></li>
                         <li><span class="instr-no">5</span><span>Setelah Anda berhasil/ gagal pada soal pertama maka Anda dapat melanjutkan ke soal berikutnya hingga seluruh titik (<b>15 titik</b>) pada phantom teranestesi.</span></li>
@@ -549,6 +549,7 @@
                     </div>
 
                     <div class="soal-foot">
+                        <p class="peringatan" id="peringatan_berhenti" hidden>Tombol <b>Berhenti Ujian</b> hanya digunakan ketika kondisi darurat, data tidak akan tersimpan ketika Anda memilih <b>Berhenti Ujian.</b></p>
                         <button type="button" class="btn-stop" id="btnStop" hidden><svg><use href="#i-stop"/></svg>Berhenti Ujian</button>
                     </div>
                 </div>
@@ -736,6 +737,7 @@
             indeks = 0;
             hasil  = [];
             ujianBerjalan = true;
+            $('peringatan_berhenti').hidden = false;
             $('btnStop').hidden = false;
             resultBar.hidden = true;
             progressGrid.querySelectorAll('.q-dot').forEach(d => d.className = 'q-dot');   // bersihkan warna
