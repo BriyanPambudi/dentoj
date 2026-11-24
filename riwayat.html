@@ -413,8 +413,11 @@
                 try {
                     // Password dicek oleh ESP32, tidak disimpan di file HTML ini
                     const res = await fetch('/api/riwayat/akses', { method: 'POST', body: new URLSearchParams({ pass }) });
+                    // if (res.ok) { simpanSesi(await res.json()); tampilkanDashboard(); }
+                    // else loginError.textContent = 'Password salah.';
                     if (res.ok) { simpanSesi(await res.json()); tampilkanDashboard(); }
-                    else loginError.textContent = 'Password salah.';
+                    else if (res.status === 401 || res.status === 403) loginError.textContent = 'Password salah.';
+                    else loginError.textContent = 'Server perangkat tidak ditemukan (kode ' + res.status + ').';
                 } catch {
                     loginError.textContent = 'Tidak dapat terhubung ke perangkat DENTO-J.';
                 } finally {
